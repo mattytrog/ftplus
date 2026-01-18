@@ -1,8 +1,61 @@
 //FTPlus Dial Unit firmware
-//(c)2025 Matthew Bostock M0WCA
+//(c)2026 Matthew Bostock M0WCA
 
+//#define 16f684
+#define 16f737
 
+#ifdef 16f684
+#include <16F684.h>
+#endif
+
+#ifdef 16f737
 #include <16F737.h>
+#endif
+
+
+//movement pulses
+//uses timer0
+//T0_INTERNAL | T0_DIV_4 + t0_preload(of 246) = pulse frequency of 50khz per pulse
+//50khz is about the maximum Yaesu CPU can handle. FTPlus can go faster, but we wont here
+//each movement is quadrature (CHA up, CHA down, CHB up, CHB down)
+//so encoder resolution eg 256, one revolution per phase/rise/fall = 256 x 4.
+// = 10.240khz per revolution. Stock Yaesu encoder is 250 pulse encoder? would be 10khz as per user manual
+
+//#define reverse_direction //disabled by default. Some cheap encoders need this. Reverses CW/CCW values
+ //how many time to repeat clock. Default 1. Higher values make bigger jumps per pulse
+
+#define encoder_resolution 256 //resolution of fitted encoder. Compensates for low value encoders by still making 1 revolution = 10khz(ish)
+#define t0_preload 246 //default 246 = 50khz clock
+int8 pulsechain;
+int16 pulsechainmax;
+
+//only applies to speaker. Doesn't apply to DC buzzer
+#define beepvol 2
+#define beeppitch 29
+#define beeplen 1000
+unsigned int16 beeptimer;
+
+
+#ifdef 16f684
+#fuses INTRC_IO, NOWDT, BROWNOUT, PUT
+#use delay(internal=8M)
+# byte PORTA = 0x05
+# byte PORTC = 0x07
+
+//outputs
+# bit dir_out=PORTC.0
+# bit clk_out=PORTC.1
+# bit beep=PORTC.5
+# bit abeep=PORTC.4
+
+//inputs
+# bit CHA=PORTA.5
+# bit CHB=PORTA.4
+# bit dl=PORTA.1
+# bit buzz=PORTA.2
+#endif
+
+#ifdef 16f737
 #fuses INTRC_IO, NOWDT, BROWNOUT, BORV42, PUT
 #use delay(internal=8M)
 # byte PORTA = 0x05
@@ -16,18 +69,14 @@
 # bit beep=PORTC.2
 # bit abeep=PORTC.3
 
-
 //inputs
 # bit CHA=PORTA.0
 # bit CHB=PORTA.1
 # bit dl=PORTA.2
 # bit buzz=PORTB.0
-# bit jp1=PORTB.1
-# bit jp2=PORTB.2
-# bit jp3=PORTB.3
+#endif
 
 int8 BITSA, BITSB;
-
 # bit currentStateCHA=BITSA.0
 # bit previousStateCHA=BITSA.1
 # bit currentStateCHB=BITSA.2
@@ -36,159 +85,154 @@ int8 BITSA, BITSB;
 # bit previoustStateBEEP=BITSA.5
 # bit detected=BITSA.6
 # bit beeptimerstart=BITSA.7
-# bit buzzstate=BITSB.0
+# bit beeping=BITSB.0
+# bit clk0 = BITSB.1
+# bit clk1 = BITSB.2
 
-int8 pulsechain;
+#define max_enc_resolution_supported 256 //dont change this unless you have a stupid high resolution encoder
 
-unsigned INT32 ontimer = 0;
-unsigned INT32 offtimer = 0;
-unsigned INT32 beeptimer = 0;
-//beep interrupt. Output is either through a speaker (uses PWM to generate beep) or active DC buzzer (line goes high). Beep duration is beeplen * 20 approx
-//Delaying cycle while beep occurs isn't being lazy. Original chips can go crazy. This is for compatibility with original Yaesu chips.
-#INT_EXT
-void ext_isr(VOID)
+#int_EXT
+void ext_isr(void)
 {
-   IF (buzz)
-   {
-   if(!beeptimerstart) beeptimerstart = 1;
-   CLEAR_INTERRUPT (INT_EXT); //clear and exit back to main loop
-   }
+   if(buzz) {beeptimerstart = 1;} //time to sound beeper
+   CLEAR_INTERRUPT(int_EXT);//clear and exit back to main loop
 }
 
-#define onpulse 5    //how long each pulse will remain high in uS 
-#define offpulse 5   //and how long will be low before checking encoder again
-#define beeplen 3000 //60000 uS approx
-
-//only applies to speaker. Doesn't apply to DC buzzer
-#define beepvol 2
-#define beeppitch 31
+#INT_TIMER0
+void t0_isr(void)
+{ 
+  if(detected)
+  {
+      //quadrature. 4clks per pulse, (high, low, high, low)
+           if((clk0 == 0) && (clk1 == 0)) {clk_out = 1; clk0 = 1; clk1 = 0;}
+      else if((clk0 == 1) && (clk1 == 0)) {clk_out = 0; clk0 = 1; clk1 = 1;}
+      else if((clk0 == 1) && (clk1 == 1)) {clk_out = 1; clk0 = 0; clk1 = 1;}
+      else if((clk0 == 0) && (clk1 == 1)) {clk_out = 0; clk0 = 0; clk1 = 0; ++pulsechain;}
+  }
+  if(pulsechain == pulsechainmax) {detected = 0; pulsechain = 0;}  
+  CLEAR_INTERRUPT(int_timer0);
+  set_timer0(t0_preload);   
+}
 
 void setup()
 {
-   setup_ccp1 (CCP_PWM); // Configure CCP1 as a PWM
-   setup_timer_2 (T2_DIV_BY_16, beeppitch, 1) ;
+   setup_ccp1(CCP_PWM);// Configure CCP1 as a PWM
+   setup_timer_2(T2_DIV_BY_16,beeppitch,1);
+   setup_timer_0(T0_INTERNAL|T0_DIV_4);
+   set_timer0(t0_preload);
    setup_adc (ADC_OFF);
-   set_tris_a (0b00111);
-   set_tris_b (0b00001111);
-   set_tris_c (0b00000000);
-   set_tris_e (0b000);
+   
+   #ifdef 16f737
+   set_tris_a(0b00111);
+   set_tris_b(0b00001111);
+   set_tris_c(0b00000000);
+   set_tris_e(0b000);
+   #endif
+   
+   #ifdef 16f684
+   set_tris_a (0b111110);
+   set_tris_c (0b000000);
+   port_a_pullups (true);
+   #endif
    ext_INT_edge (L_TO_H);
+   disable_interrupts(int_EXT);
+   enable_interrupts(int_EXT);
+   disable_interrupts(int_timer0);
+   enable_interrupts(int_timer0);
+   enable_interrupts(GLOBAL);
    
-   //activate pullups briefly while we read jumper state
-   port_b_pullups (true);
-   //pulsechain is the amount of pulses transmitted in relation to pulses received from encoder. Normally 2(stock Yaesu - 1 per channel).
-   //adding more leads to faster counting, at the expense of accuracy (only noticeable on 5+ pulses)
-   //pulsechain of 1 = 5khz per revolution
-   //pulsechain of 2 = 10khz per revolution
-   if((jp1) && (jp2) && (jp3)) pulsechain = 1;
-   
-   //optional jumpers to speed up counting if required.
-   IF ( ! jp1) pulsechain =   2;
-   IF ( ! jp2) pulsechain =   5;
-   IF ( ! jp3) pulsechain =   10;
-   port_b_pullups (false);
-   
-   disable_interrupts (INT_EXT);
-   enable_interrupts (INT_EXT);
-   enable_interrupts (GLOBAL);
-
-   //welcome beep
+   BITSA = 0; BITSB = 0;
+   delay_ms(10);
+   pulsechainmax = (max_enc_resolution_supported / encoder_resolution);
+   beeptimer = 0;
    beeptimerstart = 1;
-
    //get base state of channels
-   previousStateCHB = CHB;
-   previousStateCHA = CHA;
+   currentStateCHA = CHA;
+   currentStateCHB = CHB;
+   previousStateCHA = currentStateCHA;
+   previousStateCHB = currentStateCHB;
+   dir_out = 1;
 }
-
 
 void main()
 {
-   setup ();
-
-   WHILE (true)
+   setup();
+   while(true)
    {
-   
-      if(!beeptimer)
-      {
-      IF ( dl) while(dl){}
-         
-         
+      
+      
+         if(beeptimerstart)
+         {
+            ++beeptimer;
+            if(beeptimer < beeplen)
+            {
+               set_pwm1_duty(beepvol);
+               abeep = 1;
+            }
+            if(beeptimer >= beeplen)
+            {
+               set_pwm1_duty(0);
+               abeep = 0;
+               beeptimer = 0;
+               beeptimerstart = 0;
+               
+            }
+            delay_us(1);
+         }
+         //beep(500);
          //work out direction
          //CHA is 180 deg out of phase with CHB acc to datasheet
          
-         //IF CHA is high and CHB is low, we wait for CHA pulse to finish. then check if CHB is under it.
-         //IF so, then B is at least 180 degrees out of phase with A, thus we are spinning clockwise.
-         //Send signal to radio high, look FOR pulses
-         IF ( (CHA)&& (! CHB))
+         //if CHA is high and CHB is low,we wait for CHA pulse to finish. then check if CHB is under it.
+         //if so,then B is at least 90 degrees out of phase with A,thus we are spinning clockwise.
+         //Send signal to radio high,look for pulses
+         if((CHA)&&( ! CHB))
          {
-            WHILE (CHA)
+            while(CHA)
             {
-               
-               IF (CHB){ dir_out = 1; break; }
+               #ifdef reverse_direction
+               if(CHB){ dir_out  = 0;break;}
+               #else
+               if(CHB){ dir_out  = 1;break;}
+               #endif
                if(beeptimerstart) break;
+             
             }
          }
-   
-         //IF CHA is low and CHB is high, we wait for CHB pulse to finish. then check if CHA is under it.
-         //IF so, then A is at least 180 degrees out of phase with B, thus we are spinning anti - clockwise.
-         //Send signal to radio low, look FOR pulses
-         IF ( (! CHA)&& (CHB))
-         {
-            WHILE (CHB)
-            {
-               
-               IF (CHA){ dir_out = 0; break; }
-               if(beeptimerstart) break;
-            }
-         }
-   
          
-         //keep checking A
-         currentStateCHA = CHA;
-         currentStateCHB = CHB;
-   
-         //IF A has changed, send a pulse, update previous reading with now current reading
-   
-            IF (previousStateCHA != currentStateCHA)
+         //if CHA is low and CHB is high,we wait for CHB pulse to finish. then check if CHA is under it.
+         //if so,then A is at least 90 degrees out of phase with B,thus we are spinning anti  - clockwise.
+         //Send signal to radio low,look for pulses
+         if(( ! CHA)&&(CHB))
+         {
+            while(CHB)
             {
-               //detected = 1;
-               previousStateCHA = currentStateCHA;
-            } 
-   
-            IF (previousStateCHB != currentStateCHB)
-            {
-            detected = 1;
-             previousStateCHB = currentStateCHB;
+               #ifdef reverse_direction
+               if(CHA){ dir_out  = 1;break;}
+               #else
+               if(CHA){ dir_out  = 0;break;}
+               #endif
+               if(beeptimerstart) break;
             }
+         }
+         
+            //keep checking A
+            currentStateCHA = CHA;
+            currentStateCHB = CHB;
             
-         if(detected)
-         {
-         for (INT i = 0; i < pulsechain; ++i)
-               {
-                  FOR (ontimer = 0; ontimer < onpulse; ontimer++) clk_out = 0;
-                  FOR (offtimer = 0; offtimer < offpulse; offtimer++) clk_out = 1;
-               }
-               detected = 0;
-         }
-         delay_us (1) ;
+            //if A has changed,send a pulse,update previous reading with now current reading
+            
+            if(previousStateCHA  != currentStateCHA)
+            {
+               //if( ! dl) detected = 1;
+               previousStateCHA = currentStateCHA;
+            }
+            if(previousStateCHB  != currentStateCHB)
+            {
+               if( ! dl) detected = 1;
+               previousStateCHB = currentStateCHB;
+            }
+         
+         
       }
-      
-      if(beeptimerstart)
-      {
-         ++beeptimer;
-         if(beeptimer < beeplen)
-         {
-         set_pwm1_duty (beepvol);
-         abeep = 1;
-         }
-         else
-         {
-         set_pwm1_duty (0);
-         abeep = 0;
-         beeptimer = 0; beeptimerstart = 0;
-         }
-         delay_us (1) ;
-      }
-   }
 }
-
