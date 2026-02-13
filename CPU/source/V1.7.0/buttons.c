@@ -1,0 +1,313 @@
+#define clarifier_button 1
+#define down_button 2
+#define up_button 3
+#define mvfo_button 4
+#define vfoab_button 5
+#define dial_lock_button 6
+#define vfom_button 7
+#define mrvfo_button 8
+#define split_button 9
+#define vfom_swap_button 10
+
+int8 dcs_res[32] = 
+{
+   //dcs dl cl sl
+   15, 0, 0, 0,
+   14, 0, 1, 1,
+   12, 0, 0, 1,
+   4, 1, 1, 1,
+   3, 1, 1, 0,
+   2, 0, 1, 0,
+   1, 1, 0, 0,
+   0, 1, 0, 1
+};
+
+int8 get_dcs()
+{
+   INT8 res = 15;
+   for(INT8 i  = 0; i < 8; i++)
+   {
+      IF((dl == dcs_res[(i * 4) + 1])&&(cl == dcs_res[(i * 4) + 2])&&(sl == dcs_res[(i * 4) + 3])){res = dcs_res[i * 4]; break; }
+   }
+   RETURN res;
+}
+
+void set_dcs(INT8 res)
+{
+   for (INT8 i = 0; i < 8; i++)
+   {
+      IF(res == dcs_res[(i * 4)]){dl = dcs_res[(i * 4) + 1]; cl = dcs_res[(i * 4) + 2]; sl = dcs_res[(i * 4) + 3]; break;}
+   }
+}
+
+
+
+int8 buttonaction (INT8 opt)
+{
+   int8 report_back = 0;
+   if((dl) && (opt == 36)) opt = 30;
+   SWITCH(opt)
+   {
+#if defined (include_standard_btn) || defined(include_cat_basic)
+      CASE 1: beep();         clarifier_button_handler();         report_back = 2;  break;
+      CASE 2: beep();         btn_dn_handler(0);                  report_back = 2;  break;
+      CASE 3: beep();         btn_up_handler(0);                  report_back = 2;  break;
+      CASE 4:                 mvfo_handler();                     report_back = 2;  break; //MVFO
+      CASE 5: beep();         vfoab_handler();                    report_back = 2;  break; //VFOAB
+      CASE 6: beep();         dial_lock_button_handler();         report_back = 2;  break;
+      CASE 7:                 vfom_handler();                     report_back = 2;  break; //VFOM
+      CASE 8: beep();         mrvfo_handler();                    report_back = 2;  break; //MRVFO
+      CASE 9: beep();         split_button_handler();             report_back = 2;  break;
+      CASE 10:                vfom_swap_handler(0);                report_back = 2;  break; //VFOM SWAP
+      CASE 11:                micup();                            report_back = 1;  break;
+      CASE 12:                micdn();                            report_back = 1;  break;
+      CASE 13: beep();        micfst();                           report_back = 2;  break;
+      CASE 14:                micup_fst();                        report_back = 2;  break;
+      CASE 15:                micdn_fst();                        report_back = 2;  break;
+      case 16:                micup_hold();                       report_back = 2;  break;
+      case 17:                micdn_hold();                       report_back = 2;  break;
+      case 18:                long_press_fast();                  report_back = 2;  break;
+      case 19:                micup_fst_hold();                   report_back = 2;  break;
+      case 20:                micdn_fst_hold();                   report_back = 2;  break;
+      case 35:                long_press_vfoab();                 report_back = 2;  break;
+      case 36:                long_press_dial_lock_ndl();         report_back = 2;  break;
+#endif
+#ifdef include_enhanced_btn
+      case 30:                long_press_dial_lock_dl();          report_back = 2;  break;
+      case 31:                long_press_clarifier();             report_back = 2;  break;
+      case 32:                long_press_btn_dn();                report_back = 2;  break;
+      case 33:                long_press_btn_up();                report_back = 2;  break;
+      case 34:                long_press_mvfo();                  report_back = 2;  break;
+      
+      case 37:                long_press_vfom();                  report_back = 2;  break;
+      case 38: beep();        long_press_mrvfo();                 report_back = 2;  break;
+      case 39:                long_press_split();                 report_back = 2;  break;
+      case 40:                long_press_swap();                  report_back = 2;  break;
+#endif
+   }
+   
+   dcs = get_dcs();
+   RETURN report_back;
+}
+
+int8 scan_mic_buttons()
+{
+   int8 res = 0;
+   if (!mic_fast&& ! mic_up) res = 11;
+   if (!mic_fast&& ! mic_dn) res = 12;
+   if (mic_fast&&mic_up&&mic_dn)  res = 13;
+   if (mic_fast&& ! mic_up) res = 14;
+   if (mic_fast&& ! mic_dn) res = 15;
+   return res;
+}
+
+
+#define ondelay 1
+int8 scan_buttons()
+{
+int8 res = 0;
+   if((!k8) && (!k4) && (!k2) && (!k1))
+   {
+         k4 = 0; k8 = 0; k1 = 0; k2 = 1; delay_us(ondelay);
+         IF(pb2) res = clarifier_button;//(RESULT: 1)Clarifier
+         IF(pb1) res = down_button;//(RESULT: 2)Down
+         IF(pb0) res = up_button;//(RESULT: 3)Up
+         
+         k2 = 0; k4 = 1; delay_us(ondelay);
+         IF(pb2) res = mvfo_button;//(RESULT: 4)M > VFO
+         IF(pb1) res = vfoab_button;//(RESULT: 5)VFO A / B
+         IF(pb0) res = dial_lock_button;//(RESULT: 6)Dial lock
+         
+         k4 = 0; k8 = 1; delay_us(ondelay);
+         IF(pb2) res = vfom_button;//(RESULT: 7)VFO > M
+         IF(pb1) res = mrvfo_button;//(RESULT: 8)MR / VFO
+         IF(pb0) res = split_button;//(RESULT: 9)SPLIT
+         
+         k8 = 0; k1 = 1; delay_us(ondelay);
+         IF(pb1) res = vfom_swap_button;//(RESULT: 11)VFO < > M
+         k8 = 0; k4 = 0; k2 = 0; k1 = 0;
+   }
+return res;
+}
+
+#define countdelay 100
+#define holdcount 50
+#define micholdcount 30
+#define micholdcountfast 100
+int8 micdelay = 20;
+int8 buttons(INT8 option)
+{
+   
+   STATIC INT8 btnres = 0;
+   STATIC INT8 micres = 0;
+   STATIC INT8 count = 0;
+   STATIC INT8 mic_count = 0;
+   INT8 rtnres = 0;
+   int8 res = 0;
+   int8 debounce;
+   
+   if(option == 2) debounce = 0;
+   else debounce = 4;
+   IF(pb2)
+   {
+      while(pb2){}
+      if(!btn_down)
+      {
+         if(scan_buttons()) btn_down = 1;
+         count= 0;
+      }
+      
+      if(btn_down)
+      {
+         if(scan_buttons())
+         {
+            btnres = scan_buttons();
+            if(count < 255) ++count;
+            if(option != 2) delay_us(countdelay);
+         }
+
+         if(count > debounce)
+         {
+            if(!option)
+            {
+               if(count < holdcount) res = 1;
+               if(count >= holdcount) res = 2;
+            }
+            
+            if(option == 1)
+            {
+               if(count < holdcount) res = 1;
+               if(count >= holdcount) res = 3;
+            }
+            
+            if(option == 2)
+            {
+               rtnres = btnres;
+               btnres = 0;
+               return rtnres;
+            }
+         }
+         
+         if(res == 1)
+         {
+            if(!scan_buttons())
+            {
+               //add some protection for staticy buttons
+               for(int i = 0; i < 10; ++i)
+               {
+                  if(scan_buttons()) break;
+               }
+               if(i >= 10)
+               {
+                  if(long_press) {rtnres = 0; long_press = 0;}
+                  else rtnres = btnres;
+                  btnres = 0;
+                  btn_down = 0;
+                  return rtnres;
+               }
+            }
+         }
+         
+         if(res == 2)
+         {
+               if(btnres) rtnres = btnres + 30;
+               btnres = 0;
+               count = 1;
+               long_press = 1;
+               btn_down = 0;
+               return rtnres; 
+         }
+         
+         if(res == 3)
+         {
+               if(btnres) rtnres = btnres + 30;
+               if(!scan_buttons())
+               {
+                  count = 1;
+                  rtnres = 0;
+               }
+               long_press = 1;
+               return rtnres; 
+         }
+      
+      
+      }
+      
+      if(!mic_down)
+      {
+         if(scan_mic_buttons()) mic_down = 1;
+         mic_count= 0;
+      
+      }
+      
+      if(mic_down)
+      {
+         if(scan_mic_buttons())
+         {
+            micres = scan_mic_buttons();
+            if(mic_count < 255) ++mic_count;
+            delay_us(micdelay);
+         }
+         if(mic_count > debounce)
+         {
+               switch(micres)
+               {
+                  default:
+                  if(mic_count < micholdcount) res = 1;
+                  if(mic_count >= micholdcount) res = 2;
+                  break;
+                  
+                  case 13:
+                  if(mic_count < micholdcount) res = 1;
+                  if(mic_count >= micholdcountfast) res = 2;
+                  break;
+               
+               }
+         }
+         
+         if(res == 1)
+         {
+            if(!scan_mic_buttons())
+            {
+               if(long_press) {long_press = 0; rtnres = 0;}
+               else rtnres = micres;
+               micres = 0;
+               mic_down = 0;
+               mic_count = 0;
+               return rtnres;
+            }
+         }
+         
+         if(res == 2)
+         {
+               //micres = scan_mic_buttons();
+               rtnres = micres + 5;
+               if((!scan_mic_buttons()) || (rtnres == 18))
+               {
+                  mic_down = 0;
+                  if(rtnres != 18) rtnres = 0;
+                  
+               }
+               long_press = 1;
+               return rtnres; 
+         }
+         
+         
+      
+      
+      }
+   }
+     
+      
+
+      IF(sw_pms)
+      {
+         while(sw_pms){}
+         beep();
+         delay_ms(200);
+         
+         if(pms == 1) {soft_pms = 0; pms = 0;} else {soft_pms = 1; pms = 1;}
+      }
+      
+   RETURN 0;
+}
