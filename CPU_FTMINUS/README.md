@@ -17,7 +17,7 @@ This has only STOCK YAESU FT757GX features, with the addition of the following:
 ## Caveats
  - FT757GX2 support in FLRig is broken. Not my fault!
  - DX Labs Commander and TRX-Manager have been tested and all features work.
- - Operating mode (SSB/AM/FM etc) are assigned to a dummy value, saved to EEPROM. There is no way of switching modulation modes automatically on the GX2.
+ - Operating mode (SSB/AM/FM etc) are assigned to a dummy value, saved to EEPROM. There is no way of switching modulation modes automatically on the FT757GX.
  - Kenwood emulation is NOT SUPPORTED in FTMinus.
  - Accelerated dial, frequency correction, manual button tuning and enhanced PMS are NOT SUPPORTED in FTMinus.
  - A more basic PMS scanner is provided.
