@@ -6,7 +6,8 @@
 ; * FREQUENCY DISPLAY (Sparepart for TMS2370 M30026  FT757 GX and GXII)      *
 ; *  Version 1.0                                                             *
 ; *  April, 2006                                                             *
-; *  written by Rudi Kauls , DB6RK                                           *
+; *  written by Rudi Kauls DB6RK											 *
+; *  additions by Matthew Bostock M0WCA                                      *
 ; ****************************************************************************
 ;  History:
 ;> Version 1.1 from 18.04.06		all funktions tested with FT757GXII,
@@ -20,6 +21,7 @@
 ;									rise time
 ;> Version 1.3 from 23.09.09        Wait_Ready routine added for compensating the timing
 ;                                   of the FT757GX 
+;> Version 1.3M from 14.07.26       Add support for PIC16F886
 ;                         
 ; Target Controller -      PIC16F737
 ;                          __________
