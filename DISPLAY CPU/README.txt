@@ -1,13 +1,14 @@
 READ THE README_FIRST FILE NOW PLEASE!!!
 
 Firmware by R. Kauls
+Additions by M. Bostock
 PCB gerbers by M. Bostock
 
 TL;DR:- 
 
 Parts needed:
 
-PIC16F737 microcontroller
+PIC16F737 or PIC16F886 microcontroller
 17 x DTB113Z digital transistors. These are pre-biased for you.
 17 x 100K 0603 SMD resistors
 1 x 100nF Capacitor

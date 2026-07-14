@@ -1,0 +1,51 @@
+MPLINK 4.48, Linker
+Linker Map File - Created Tue Jul 14 12:26:45 2026
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x00036e
+        .config_2007_FT.O       code   0x002007    program   0x000002
+        .config_2008_FT.O       code   0x002008    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x0001b6      
+                            0x002007    0x002008      
+            441 out of 8455 program addresses used, program memory utilization is 5%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                    Delay   0x0000b2    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+              Disp_Decode   0x000001    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                 End_read   0x000050    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                     Loop   0x000037    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                Wait_Data   0x00003c    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+               Wait_Ready   0x00004b    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                       d1   0x0000b4    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+              reset_entry   0x000000    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                    start   0x000012    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+              reset_entry   0x000000    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+              Disp_Decode   0x000001    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                    start   0x000012    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                     Loop   0x000037    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                Wait_Data   0x00003c    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+               Wait_Ready   0x00004b    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                 End_read   0x000050    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                    Delay   0x0000b2    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+                       d1   0x0000b4    program     static C:\Users\matth\Desktop\VFD_TEST\ft.asm
+
+

@@ -44,12 +44,16 @@
 ; * Device type and options.                                                 *
 ; ****************************************************************************
 ;
-        processor PIC16F737
-        include P16F737.inc
-;
+processor PIC16F886
+include P16F886.inc
+ERRORLEVEL -302
+
 ; ****************************************************************************
-;		wdt off,reset off, brown out on at 4,5V, internal rc osc.            *
+;		wdt off,reset off, brown out on at 4.5V, internal rc osc.            *
 ; ****************************************************************************
+    __CONFIG _CONFIG1, _LVP_OFF & _FCMEN_OFF & _IESO_OFF & _BOR_ON & _CPD_OFF & _CP_OFF & _MCLRE_ON & _PWRTE_ON & _WDT_OFF & _INTRC_OSC_NOCLKOUT
+    __CONFIG _CONFIG2, _WRT_OFF & _BOR40V
+
 del_ctr				equ		0x50
 i_dat				equ		0x51
 Flags				equ		0x52
@@ -114,25 +118,28 @@ start
 	movlw	0xff
 	movwf	PORTC				; segments off
 
-    bsf     STATUS,RP0      	; rp1 on
+    bsf     STATUS,RP0      	; Bank 1
+    bcf     STATUS,RP1
 
-	movlw	0x4E
-	movwf	OSCCON				;internal clock 1 mc
+	movlw	0x41				; internal clock 1 MHz for 16F886
+	movwf	OSCCON				;
 
-	movlw	b'10000011'	 		;clock for TMR0 = t/16
+	movlw	b'10000011'	 		; clock for TMR0 = t/16
 	movwf 	OPTION_REG
 
-    movlw   0x0f				;analog off
-    movwf	ADCON1				;
-
-	clrf    TRISA            	;port A all outputs
+	clrf    TRISA            	; port A all outputs
 								;
 	movlw	b'11110001'	  		; port b mixed
     movwf   TRISB           	; 
 
 	clrf	TRISC				; port c all outputs
+
+    bsf     STATUS,RP1          ; Move to Bank 3 (RP0=1, RP1=1)
+    clrf    ANSEL               ; Digital I/O for PORTA
+    clrf    ANSELH              ; Digital I/O for PORTB
 	
-	bcf		STATUS,RP0
+	bcf		STATUS,RP0          ; Return to Bank 0
+	bcf		STATUS,RP1
  
 
 	movlw	0xff
@@ -317,8 +324,5 @@ d1
 	retlw			0	
 
 	fill  (goto start), 100
-
-
-
 
 	END
