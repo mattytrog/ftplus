@@ -1,4 +1,4 @@
-m# New! Support for PIC16F886 for display CPU replacement. Use either PIC16F737 or PIC16F886. No PCB changes.
+## New! Support for PIC16F886 for display CPU replacement. Use either PIC16F737 or PIC16F886. No PCB changes.
 
 ## Welcome to FTPlus!
 This is a custom suite of projects, firmware and software intended for the Yaesu FT757GX transceiver
