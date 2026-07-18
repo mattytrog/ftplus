@@ -4,7 +4,7 @@
 This is a custom suite of projects, firmware and software intended for the Yaesu FT757GX transceiver
 
 ## Replacement CPU and firmware
-https://github.com/mattytrog/ftplus/tree/main/CPU/firmware
+https://github.com/mattytrog/ftplus/tree/main/CPU/firmware  
 This is a replacement CPU board, using a PIC controller and custom firmware to add some useful new features to the old FT757. These features are outlined below:
 
  - Additional memories (14 usable MR memories, together with 20 additional stored VFO "bands")
