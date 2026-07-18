@@ -5,7 +5,7 @@ I've soldered my FTPlus in, but the screen is blank when I power on.
 I cannot get CAT working
  - Double-check connections. Pressing Mic down button should make your serial TX light(if fitted) light up.
  - Check baud rate. To start with, baud rate is 4800, stop bits 2, try switching off flow control too.
- - Hold M>VFO on power-on to see your current baud rate and use up/down buttons or the dial to change. Press M>VFO again to save.
+ - Hold MR/VFO on power-on to see and change baud rate (with VFO wheel or up/down buttons). Press MR/VFO again to save.
  
 I have an original display chip fitted. There is a slight flicker on the display when CAT is running
  - Normal behaviour. Everything in FTPlus is dealt with using software and timer interrupts...
@@ -13,7 +13,7 @@ I have an original display chip fitted. There is a slight flicker on the display
  - PIC-based display CPUs are unaffected by this
  
 What is the refresh rate of the VFD?
- - On original chips, it is between 54-58 Hz. On PIC-based display CPUs, it is 60Hz.
+ - On original chips, it is between 50-58 Hz per character. On PIC-based display CPUs, it is 60Hz per character. Complete refresh rate is between 1khz and 2.5khz
  
 Configurator isn't working
  - Ensure nothing else is using CAT. Close any rig control apps down.
